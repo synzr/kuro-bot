@@ -2,6 +2,7 @@ from mastodon import Mastodon
 from apscheduler.schedulers.blocking import BlockingScheduler
 from datetime import datetime, timedelta
 from random import choice
+import logging
 import yaml
 import os
 
@@ -89,6 +90,8 @@ def impl_post(bot: Mastodon) -> None:
 
         media_id = media["id"]
         save_mastodon_media_id(content_key, media_id)
+
+        logging.info(f"Uploaded {content_key} to the Mastodon instance (media id: {media_id}).")
     
     status = bot.status_post(
         generate_status_text(content),
@@ -96,14 +99,22 @@ def impl_post(bot: Mastodon) -> None:
         sensitive=content["media_content_warning_data"]["content_warning_is_enabled"],
         spoiler_text=content["media_content_warning_data"]["content_warning_note"]
     )
+    logging.info(f"Posted the status with {content_key} (media id: {media_id}).")
 
     temporary_blocked_content[content_key] \
         = datetime.utcnow() + timedelta(hours=6)
+    logging.info(f"Blocked the {content_key} for next 6 hours.")
 
 
 def main() -> None:
     from dotenv import load_dotenv
     load_dotenv()
+
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(message)s',
+        datefmt='%d-%b-%y %H:%M:%S'
+    )
 
     bot = Mastodon(
         access_token=os.getenv("MASTODON_ACCESS_TOKEN"),
@@ -113,7 +124,7 @@ def main() -> None:
     scheduler = BlockingScheduler(timezone='UTC')
 
     scheduler.add_jobstore("sqlalchemy", url=os.getenv("SQLITE_URL", "sqlite:///jobs.sqlite3"))
-    scheduler.add_job(impl_post, 'interval', [bot], start_date=datetime.utcnow(), hours=1)
+    scheduler.add_job(impl_post, 'interval', [bot], hours=1)
 
     try: scheduler.start()
     except (KeyboardInterrupt, SystemExit): scheduler.shutdown()
