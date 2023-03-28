@@ -1,0 +1,4 @@
+Mastodon.py
+APScheduler
+pyyaml
+python-dotenv

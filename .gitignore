@@ -127,3 +127,9 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# Job database
+jobs.sqlite3
+
+# Content directory
+content/
