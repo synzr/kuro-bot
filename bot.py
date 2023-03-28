@@ -96,7 +96,6 @@ def impl_post(bot: Mastodon) -> None:
         sensitive=content["media_content_warning_data"]["content_warning_is_enabled"],
         spoiler_text=content["media_content_warning_data"]["content_warning_note"]
     )
-    print(status)
 
     temporary_blocked_content[content_key] \
         = datetime.utcnow() + timedelta(hours=6)
