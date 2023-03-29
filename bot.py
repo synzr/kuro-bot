@@ -40,26 +40,6 @@ def get_non_blocked_content(avaliable_keys: list[str]) -> str:
     return choosed_key
 
 
-def save_mastodon_media_id(content_name: str, media_id: int) -> None:
-    content_directory_path = os.getenv(
-        "CONTENT_DIR_PATH", os.path.join(__dirname__, "./content/")
-    )
-
-    metadata_path = os.path.join(content_directory_path, content_name + ".yaml")
-    if not os.path.exists(metadata_path):
-        metadata_path = os.path.join(
-            content_directory_path, content_name + ".yml"
-        )
-
-    with open(metadata_path, "r") as f:
-        metadata = yaml.safe_load(f)
-    
-    metadata["media_mastodon_media_id"] = media_id
-
-    with open(metadata_path, "w") as f:
-        yaml.safe_dump(metadata, f)
-
-
 def generate_status_text(content: dict) -> str:
     result = f"{content['media_description']}\n\n"
 
@@ -80,18 +60,13 @@ def impl_post(bot: Mastodon) -> None:
     )
     content = avaliable_content[content_key]
 
-    media_id = content.get('media_mastodon_media_id')
+    media = bot.media_post(
+        content["media_file"],
+        description=content["media_description"]
+    )
 
-    if not media_id:
-        media = bot.media_post(
-            content["media_file"],
-            description=content["media_description"]
-        )
-
-        media_id = media["id"]
-        save_mastodon_media_id(content_key, media_id)
-
-        logging.info(f"Uploaded {content_key} to the Mastodon instance (media id: {media_id}).")
+    media_id = media["id"]
+    logging.info(f"Uploaded {content_key} to the Mastodon instance (media id: {media_id}).")
     
     status = bot.status_post(
         generate_status_text(content),
